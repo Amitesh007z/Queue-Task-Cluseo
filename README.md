@@ -2,7 +2,8 @@
 
 The API accepts email and subscription jobs into a shared Redis-backed BullMQ queue. Run API/WebSocket replicas separately from worker replicas. Each API replica serves the dashboard, JSON API, and `/ws` on the same port; connections are not session-affine, and a reconnect receives a fresh snapshot from Redis.
 
-![Uploading image.png…]()
+<img width="2876" height="1386" alt="image" src="https://github.com/user-attachments/assets/6286aa5a-e3f0-4905-9895-1bf8a943838a" />
+
 
 ## Run locally
 
