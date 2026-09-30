@@ -1,6 +1,8 @@
-# Relay queue service
+# Queue service
 
 The API accepts email and subscription jobs into a shared Redis-backed BullMQ queue. Run API/WebSocket replicas separately from worker replicas. Each API replica serves the dashboard, JSON API, and `/ws` on the same port; connections are not session-affine, and a reconnect receives a fresh snapshot from Redis.
+
+![Uploading image.png…]()
 
 ## Run locally
 
