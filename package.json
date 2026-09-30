@@ -1,0 +1,20 @@
+{
+  "name": "queue-mail-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Queue-backed email and subscription service with a live dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "worker": "node worker.js",
+    "check": "node --check server.js && node --check worker.js && node --check queue.js",
+    "verify": "node scripts/verify-e2e.js"
+  },
+  "dependencies": {
+    "bullmq": "^5.56.9",
+    "express": "^4.21.2",
+    "ioredis": "^5.6.1",
+    "nodemailer": "^10.0.13",
+    "ws": "^8.18.0"
+  }
+}

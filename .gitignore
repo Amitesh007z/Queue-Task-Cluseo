@@ -1,0 +1,7 @@
+node_modules/
+chat.json
+.env
+.env.*
+!.env.example
+secrets/
+npm-debug.log*

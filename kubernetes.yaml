@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: relay-api
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: relay-api
+  template:
+    metadata:
+      labels:
+        app: relay-api
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api
+          image: your-registry/relay:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: relay-secrets
+                  key: redis-url
+            - name: MAX_WS_CLIENTS
+              value: "5000"
+            - name: ENABLE_QUEUE_TEST
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: relay-api
+spec:
+  selector:
+    app: relay-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: relay-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: relay-worker
+  template:
+    metadata:
+      labels:
+        app: relay-worker
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: worker
+          image: your-registry/relay:1.0.0
+          imagePullPolicy: IfNotPresent
+          command: ["npm", "run", "worker"]
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: relay-secrets
+                  key: redis-url
+            - name: WORKER_CONCURRENCY
+              value: "20"
+            - name: SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: relay-secrets
+                  key: smtp-host
+            - name: SMTP_PORT
+              value: "587"
+            - name: SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: relay-secrets
+                  key: smtp-from
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: relay-secrets
+                  key: smtp-user
+            - name: SMTP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: relay-secrets
+                  key: smtp-password
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi

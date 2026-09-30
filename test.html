@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f4f3ee">
+    <title>Relay | Queue dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+        :root { color-scheme: light; --ink: #20231f; --muted: #72766f; --line: #dedfd8; --paper: #fbfbf8; --canvas: #f1f1eb; --green: #217451; --green-soft: #e5f1e9; --orange: #bc6538; --orange-soft: #f8ece3; --red: #a64135; --red-soft: #f7e9e6; --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 84% 0%, #e5ebe1 0, transparent 35%), var(--canvas); color: var(--ink); font-family: var(--sans); }
+        button, input, textarea, select { font: inherit; }
+        .topbar { height: 64px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 5vw; background: rgba(251,251,248,.82); }
+        .brand { display: flex; align-items: center; gap: 11px; font-weight: 700; letter-spacing: .02em; }
+        .brand-mark { width: 26px; height: 26px; display: grid; place-items: center; color: white; background: var(--green); border-radius: 7px; font-size: 15px; }
+        .connection { display: flex; align-items: center; gap: 9px; color: var(--muted); font: 12px var(--mono); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 0 3px var(--orange-soft); }
+        .dot.online { background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
+        main { width: min(1120px, 90vw); margin: 48px auto 72px; animation: arrive .45s ease both; }
+        @keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .eyebrow { margin: 0 0 10px; color: var(--green); text-transform: uppercase; letter-spacing: .11em; font: 11px var(--mono); }
+        h1 { margin: 0; font-size: clamp(28px, 4vw, 38px); line-height: 1.12; letter-spacing: -.025em; }
+        .intro { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 30px; }
+        .intro p:last-child { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+        .live-label { color: var(--muted); font: 11px var(--mono); white-space: nowrap; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); background: var(--paper); margin-bottom: 26px; }
+        .stat { padding: 18px 22px; }
+        .stat + .stat { border-left: 1px solid var(--line); }
+        .stat-label { color: var(--muted); font: 11px var(--mono); text-transform: uppercase; letter-spacing: .07em; }
+        .stat-value { margin-top: 9px; font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .columns { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr); gap: 26px; align-items: start; }
+        .section-title { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin: 0 0 16px; }
+        h2 { font-size: 15px; margin: 0; font-weight: 600; }
+        .section-note { color: var(--muted); font: 11px var(--mono); }
+        .forms { display: grid; gap: 22px; }
+        form { background: var(--paper); border: 1px solid var(--line); padding: 20px; }
+        .test-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .test-result { min-height: 38px; margin-top: 12px; color: var(--muted); font: 11px/1.6 var(--mono); }
+        .test-result.error { color: var(--red); }
+        .form-heading { margin: 0 0 17px; font-size: 13px; font-weight: 600; }
+        label { display: block; margin: 0 0 7px; color: #555a52; font-size: 12px; }
+        input, textarea, select { width: 100%; border: 1px solid #d7d9d1; border-radius: 4px; background: white; padding: 10px 11px; color: var(--ink); outline: none; font-size: 13px; }
+        input:focus, textarea:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-soft); }
+        textarea { min-height: 102px; resize: vertical; line-height: 1.5; }
+        .field { margin-bottom: 14px; }
+        .button-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; }
+        .hint { color: var(--muted); font-size: 11px; }
+        button { min-height: 37px; border: 0; border-radius: 4px; background: var(--green); color: white; padding: 0 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        button:hover { background: #195e41; }
+        button:disabled { cursor: wait; opacity: .65; }
+        .feedback { min-height: 16px; margin-top: 10px; color: var(--green); font-size: 12px; }
+        .feedback.error { color: var(--red); }
+        .jobs { display: grid; gap: 0; }
+        .job { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 14px 2px; border-bottom: 1px solid var(--line); animation: arrive .2s ease both; }
+        .job-icon { width: 8px; height: 8px; margin-top: 5px; border-radius: 2px; background: #aaa; }
+        .job-icon.completed { background: var(--green); }
+        .job-icon.processing { background: var(--orange); animation: pulse 1.2s infinite; }
+        .job-icon.failed { background: var(--red); }
+        @keyframes pulse { 50% { opacity: .35; } }
+        .job-title { overflow: hidden; color: var(--ink); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+        .job-meta { margin-top: 5px; color: var(--muted); font: 10px var(--mono); }
+        .status { color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+        .status.completed { color: var(--green); }
+        .status.failed { color: var(--red); }
+        .empty { padding: 38px 10px; color: var(--muted); text-align: center; font-size: 12px; }
+        .footnote { margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; line-height: 1.6; }
+        @media (max-width: 720px) { main { width: min(94vw, 540px); margin-top: 32px; } .columns { grid-template-columns: 1fr; } .intro { align-items: start; } .live-label { padding-top: 5px; } .stat { padding: 14px 12px; } .stat-value { font-size: 24px; } .topbar { padding: 0 3vw; } }
+        @media (max-width: 420px) { .intro { display: block; } .live-label { margin-top: 15px; } .stats { grid-template-columns: 1fr; } .stat { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; } .stat + .stat { border-left: 0; border-top: 1px solid var(--line); } .stat-value { margin-top: 0; } }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">r</span><span>relay</span></div>
+        <div class="connection"><span class="dot" id="connection-dot"></span><span id="connection-label">Connecting</span></div>
+    </header>
+    <main>
+        <div class="intro">
+            <div><p class="eyebrow">Operations / Queue</p><h1>Message center</h1><p>Send an email or add a subscriber. The worker handles each request in order.</p></div>
+            <div class="live-label">LIVE QUEUE MONITOR</div>
+        </div>
+        <section class="stats" aria-label="Queue status">
+            <div class="stat"><div><div class="stat-label">Waiting</div></div><div class="stat-value" id="waiting-count">0</div></div>
+            <div class="stat"><div><div class="stat-label">Processing</div></div><div class="stat-value" id="processing-count">0</div></div>
+            <div class="stat"><div><div class="stat-label">Subscribers</div></div><div class="stat-value" id="subscriber-count">0</div></div>
+        </section>
+        <div class="columns">
+            <section>
+                <div class="section-title"><h2>New request</h2><span class="section-note">POST /api</span></div>
+                <div class="forms">
+                    <form id="email-form">
+                        <p class="form-heading">Send an email</p>
+                        <div class="field"><label for="email-to">Recipient</label><input id="email-to" name="to" type="email" placeholder="name@example.com" maxlength="254" required></div>
+                        <div class="field"><label for="email-subject">Subject</label><input id="email-subject" name="subject" placeholder="A quick note" maxlength="200" required></div>
+                        <div class="field"><label for="email-text">Message</label><textarea id="email-text" name="text" placeholder="Write your message..." maxlength="10000" required></textarea></div>
+                        <div class="button-row"><span class="hint">Added to the worker queue</span><button type="submit">Queue email</button></div>
+                        <div class="feedback" aria-live="polite"></div>
+                    </form>
+                    <form id="subscription-form">
+                        <p class="form-heading">New subscription</p>
+                        <div class="field"><label for="subscriber-email">Email address</label><input id="subscriber-email" name="email" type="email" placeholder="name@example.com" maxlength="254" required></div>
+                        <div class="button-row"><span class="hint">Duplicate addresses are rejected</span><button type="submit">Add subscriber</button></div>
+                        <div class="feedback" aria-live="polite"></div>
+                    </form>
+                    <form id="queue-test-form">
+                        <p class="form-heading">Queue load test</p>
+                        <div class="test-controls">
+                            <div class="field"><label for="test-count">Requests</label><select id="test-count" name="count"><option value="10">10</option><option value="100" selected>100</option><option value="500">500</option></select></div>
+                            <div class="field"><label for="test-concurrency">Concurrent requests</label><select id="test-concurrency" name="concurrency"><option value="5">5</option><option value="20" selected>20</option><option value="50">50</option></select></div>
+                        </div>
+                        <div class="button-row"><span class="hint">Synthetic jobs, no email or subscribers</span><button type="submit">Run queue test</button></div>
+                        <div class="test-result" id="test-result" aria-live="polite">Up to 500 requests per run.</div>
+                    </form>
+                </div>
+            </section>
+            <section>
+                <div class="section-title"><h2>Recent jobs</h2><span class="section-note" id="job-count">0 JOBS</span></div>
+                <div class="jobs" id="jobs-list"><div class="empty">Waiting for the first request.</div></div>
+                <div class="footnote">Queue and subscriptions are shared through Redis. A disconnected dashboard reconnects and reloads the latest snapshot. Email delivery needs SMTP settings on the worker.</div>
+            </section>
+        </div>
+    </main>
+    <script>
+        const connectionDot = document.getElementById('connection-dot');
+        const connectionLabel = document.getElementById('connection-label');
+        const jobsList = document.getElementById('jobs-list');
+        const jobCount = document.getElementById('job-count');
+
+        let reconnectAttempt = 0;
+
+        function connect() {
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const socket = new WebSocket(`${protocol}//${location.host}/ws`);
+            socket.addEventListener('open', () => {
+                reconnectAttempt = 0;
+                connectionDot.classList.add('online');
+                connectionLabel.textContent = 'Connected';
+            });
+            socket.addEventListener('close', () => {
+                connectionDot.classList.remove('online');
+                connectionLabel.textContent = 'Reconnecting';
+                reconnectAttempt += 1;
+                const delay = Math.min(30000, 1000 * 2 ** Math.min(reconnectAttempt, 5));
+                setTimeout(connect, delay * (0.75 + Math.random() * 0.5));
+            });
+            socket.addEventListener('error', () => socket.close());
+            socket.addEventListener('message', (event) => {
+                try { render(JSON.parse(event.data)); } catch { /* Ignore malformed updates. */ }
+            });
+        }
+
+        function render(data) {
+            document.getElementById('waiting-count').textContent = data.queue.waiting;
+            document.getElementById('processing-count').textContent = data.queue.processing;
+            document.getElementById('subscriber-count').textContent = data.queue.subscribed;
+            jobCount.textContent = `${data.jobs.length} JOB${data.jobs.length === 1 ? '' : 'S'}`;
+            jobsList.replaceChildren();
+            if (!data.jobs.length) {
+                const empty = document.createElement('div');
+                empty.className = 'empty';
+                empty.textContent = 'Waiting for the first request.';
+                jobsList.append(empty);
+                return;
+            }
+            for (const job of data.jobs) {
+                const row = document.createElement('div');
+                row.className = 'job';
+                const icon = document.createElement('span');
+                icon.className = `job-icon ${job.status}`;
+                const details = document.createElement('div');
+                const title = document.createElement('div');
+                title.className = 'job-title';
+                title.textContent = job.type === 'email'
+                    ? `${job.subject} · ${job.email}`
+                    : job.type === 'queue-test'
+                        ? `Queue test · ${job.runId || 'probe'}`
+                        : `Subscription · ${job.email}`;
+                const meta = document.createElement('div');
+                meta.className = 'job-meta';
+                meta.textContent = `${new Date(job.createdAt).toLocaleTimeString()} · ${job.attempts} attempt${job.attempts === 1 ? '' : 's'}${job.error ? ` · ${job.error}` : ''}`;
+                const status = document.createElement('span');
+                status.className = `status ${job.status}`;
+                status.textContent = job.status;
+                details.append(title, meta);
+                row.append(icon, details, status);
+                jobsList.append(row);
+            }
+        }
+
+        async function submitForm(event, endpoint, getPayload) {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const button = form.querySelector('button');
+            const feedback = form.querySelector('.feedback');
+            button.disabled = true;
+            feedback.className = 'feedback';
+            feedback.textContent = 'Adding to queue...';
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(getPayload(new FormData(form))),
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Request could not be queued.');
+                feedback.textContent = `Queued · ${result.job.id.slice(0, 8)}`;
+                form.reset();
+            } catch (error) {
+                feedback.className = 'feedback error';
+                feedback.textContent = error.message;
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        document.getElementById('email-form').addEventListener('submit', (event) =>
+            submitForm(event, '/api/email', (form) => ({ to: form.get('to'), subject: form.get('subject'), text: form.get('text') })));
+        document.getElementById('subscription-form').addEventListener('submit', (event) =>
+            submitForm(event, '/api/subscriptions', (form) => ({ email: form.get('email') })));
+
+        document.getElementById('queue-test-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const button = form.querySelector('button');
+            const result = document.getElementById('test-result');
+            const count = Number(new FormData(form).get('count'));
+            const concurrency = Number(new FormData(form).get('concurrency'));
+            const runId = crypto.randomUUID();
+            const startedAt = performance.now();
+            let nextRequest = 0;
+            let accepted = 0;
+            let rejected = 0;
+            button.disabled = true;
+            result.className = 'test-result';
+            result.textContent = `Sending ${count} requests...`;
+
+            async function sendRequests() {
+                while (nextRequest < count) {
+                    const requestNumber = nextRequest++;
+                    try {
+                        const response = await fetch('/api/subscriptions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Queue-Test': 'true',
+                                'X-Queue-Test-Run': runId,
+                            },
+                            body: '{}',
+                        });
+                        if (response.status === 202) accepted += 1;
+                        else rejected += 1;
+                    } catch {
+                        rejected += 1;
+                    }
+                    result.textContent = `Sending ${requestNumber + 1} / ${count} · ${accepted} accepted · ${rejected} rejected`;
+                }
+            }
+
+            try {
+                await Promise.all(Array.from({ length: concurrency }, () => sendRequests()));
+                const seconds = (performance.now() - startedAt) / 1000;
+                const rate = Math.round(count / seconds);
+                result.textContent = `Run ${runId.slice(0, 8)} · ${accepted}/${count} accepted · ${rejected} rejected · ${seconds.toFixed(2)}s · ${rate} req/s`;
+                if (rejected) result.className = 'test-result error';
+            } finally {
+                button.disabled = false;
+            }
+        });
+        connect();
+    </script>
+</body>
+</html>
